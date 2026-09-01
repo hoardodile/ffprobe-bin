@@ -1,0 +1,60 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  build:
+    name: build and upload release assets
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Install dependencies (node-tar + @hoardodile/7z-bin)
+        run: npm install --ignore-scripts --no-package-lock
+      - name: Build and upload release assets
+        run: node scripts/build-assets.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  # Publishes the package to npm. Trusted publishing (OIDC): the id-token
+  # replaces registry credentials; provenance is requested explicitly. The
+  # npm-side trust relationship is one-time setup per package (npm >=
+  # 11.11), see README: `npm trust github @hoardodile/ffprobe-bin --file
+  # release.yml --repo hoardodile/ffprobe-bin --allow-publish`.
+  publish:
+    name: publish to npm
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org/
+      - name: Publish @hoardodile/ffprobe-bin
+        # Idempotent: a rerun of an already-released version reports a skip
+        # instead of failing on "version already exists".
+        # `npx npm@latest`: the OIDC trusted-publishing authorization needs
+        # npm >= 11.5.1, while node-version 22 above ships npm 10.x (which
+        # signs provenance but cannot publish via the trust relationship).
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "@hoardodile/ffprobe-bin@${VERSION}" version >/dev/null 2>&1; then
+            echo "already published: @hoardodile/ffprobe-bin@${VERSION}"
+          else
+            npx --yes npm@latest publish --access public --provenance
+          fi

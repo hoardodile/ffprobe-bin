@@ -1,0 +1,33 @@
+{
+	"ffprobe": "9.0.1",
+	"assets": {
+		"win32-x64": {
+			"file": "win32-x64.tar.gz",
+			"sha256": ""
+		},
+		"darwin-x64": {
+			"file": "darwin-x64.tar.gz",
+			"sha256": ""
+		},
+		"darwin-arm64": {
+			"file": "darwin-arm64.tar.gz",
+			"sha256": ""
+		},
+		"linux-x64": {
+			"file": "linux-x64.tar.gz",
+			"sha256": ""
+		},
+		"linux-ia32": {
+			"file": "linux-ia32.tar.gz",
+			"sha256": ""
+		},
+		"linux-arm64": {
+			"file": "linux-arm64.tar.gz",
+			"sha256": ""
+		},
+		"linux-arm": {
+			"file": "linux-arm.tar.gz",
+			"sha256": ""
+		}
+	}
+}

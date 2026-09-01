@@ -1,0 +1,12 @@
+# Downloaded ffprobe binary (created by install.js at install time).
+bin/
+# Install-time download/unpack scratch dirs.
+tmp/
+tmp2/
+# Local cache + staging for official ffmpeg artifacts (scripts/build-assets.mjs).
+.assets-cache/
+# Built release assets (uploaded by scripts/build-assets.mjs).
+dist/
+# Local install (workflows install deps to run install.js / build-assets.mjs).
+node_modules/
+package-lock.json

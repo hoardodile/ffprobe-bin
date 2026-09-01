@@ -1,0 +1,57 @@
+{
+	"name": "@hoardodile/ffprobe-bin",
+	"version": "0.1.0",
+	"license": "GPL-3.0",
+	"description": "ffprobe 9.0.1 static binary for the media runtime, downloaded from GitHub Releases at install time (7z-bin / ffprobe-static style).",
+	"type": "commonjs",
+	"main": "index.js",
+	"types": "types/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./types/index.d.ts",
+			"default": "./index.js"
+		},
+		"./assets.json": "./assets.json",
+		"./package.json": "./package.json"
+	},
+	"files": [
+		"index.js",
+		"install.js",
+		"assets.json",
+		"types"
+	],
+	"scripts": {
+		"install": "node install.js",
+		"build:assets": "node scripts/build-assets.mjs"
+	},
+	"dependencies": {
+		"tar": "^7.4.3"
+	},
+	"devDependencies": {
+		"@hoardodile/7z-bin": "^1.1.3"
+	},
+	"engines": {
+		"node": ">=18"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/hoardodile/ffprobe-bin.git"
+	},
+	"bugs": {
+		"url": "https://github.com/hoardodile/ffprobe-bin/issues"
+	},
+	"homepage": "https://github.com/hoardodile/ffprobe-bin#readme",
+	"keywords": [
+		"ffprobe",
+		"static",
+		"binary",
+		"binaries",
+		"ffprobe-static",
+		"video",
+		"audio",
+		"media"
+	],
+	"publishConfig": {
+		"access": "public"
+	}
+}

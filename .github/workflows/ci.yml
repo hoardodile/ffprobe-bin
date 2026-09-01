@@ -1,0 +1,61 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: install (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-14]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Verify npm tarball contents
+        run: npm pack --dry-run
+      - name: Install dependencies (node-tar)
+        run: npm install --ignore-scripts --no-package-lock
+      - name: Install native ffprobe (download + sha256 + unpack + version smoke)
+        run: node install.js
+      - name: Smoke test index.js
+        run: |
+          node -e "const fs=require('node:fs');const{spawnSync}=require('node:child_process');const p=require('./');if(!p)throw new Error('index.js resolved to null');if(!fs.existsSync(p))throw new Error('binary missing: '+p);const r=spawnSync(p,['-version'],{stdio:['ignore','pipe','ignore'],timeout:30000});if(r.status!==0)throw new Error('ffprobe -version exited '+r.status);if(!String(r.stdout).includes('9.0.1'))throw new Error('unexpected ffprobe version: '+String(r.stdout).split('\n')[0]);console.log('smoke ok:',p)"
+      - name: Check FFPROBE_BIN_PATH override
+        run: |
+          node -e "process.env['FFPROBE_BIN_PATH']='C:/override/ffprobe.exe';if(require('./')!=='C:/override/ffprobe.exe')throw new Error('FFPROBE_BIN_PATH override ignored');console.log('override ok')"
+
+  verify-assets:
+    name: verify release assets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Verify all release assets against assets.json
+        run: |
+          set -euo pipefail
+          VERSION=$(node -p "require('./package.json').version")
+          BASE="https://github.com/hoardodile/ffprobe-bin/releases/download/v${VERSION}"
+          TMP=$(mktemp -d)
+          trap 'rm -rf "$TMP"' EXIT
+          curl -fsSL "${BASE}/SHA256SUMS.txt" -o "$TMP/SHA256SUMS.txt"
+          for key in $(jq -r '.assets | keys[]' assets.json); do
+            file=$(jq -r ".assets[\"${key}\"].file" assets.json)
+            want=$(jq -r ".assets[\"${key}\"].sha256" assets.json)
+            if [ -z "${want}" ]; then echo "${key} not yet built (empty sha256), skipping"; continue; fi
+            got=$(curl -fsSL "${BASE}/${file}" | sha256sum | cut -d' ' -f1)
+            if [ "${got}" != "${want}" ]; then echo "sha256 mismatch for ${file}" >&2; exit 1; fi
+            grep -q "^${want}  ${file}$" "$TMP/SHA256SUMS.txt" || { echo "SHA256SUMS.txt mismatch for ${file}" >&2; exit 1; }
+            echo "${key} ok"
+          done
