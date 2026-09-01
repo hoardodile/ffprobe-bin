@@ -27,9 +27,6 @@
 	"dependencies": {
 		"tar": "^7.4.3"
 	},
-	"devDependencies": {
-		"@hoardodile/7z-bin": "^1.1.3"
-	},
 	"engines": {
 		"node": ">=18"
 	},

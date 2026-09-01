@@ -19,7 +19,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-      - name: Install dependencies (node-tar + @hoardodile/7z-bin)
+      - name: Install dependencies (node-tar)
         run: npm install --ignore-scripts --no-package-lock
       - name: Build and upload release assets
         run: node scripts/build-assets.mjs

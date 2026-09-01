@@ -42,10 +42,7 @@ import {
 import { basename, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { spawnSync } from "node:child_process"
-import { createRequire } from "node:module"
 import { create as tarCreate } from "tar"
-
-const require = createRequire(import.meta.url)
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url))
 const CACHE_DIR = join(ROOT, ".assets-cache")
@@ -68,8 +65,8 @@ const ARM_MAJOR = VERSION.split(".")[0] // osxexperts filenames embed the major 
 
 const PLATFORMS = {
 	"win32-x64": {
-		official: [`${GYAN_BASE}/ffmpeg-${VERSION}-essentials_build.7z`],
-		kind: "7z",
+		official: [`${GYAN_BASE}/ffmpeg-${VERSION}-essentials_build.zip`],
+		kind: "zip",
 	},
 	"darwin-x64": {
 		official: [`${EVERMEET_BASE}ffprobe-${VERSION}.zip`],
@@ -153,12 +150,12 @@ function run(cmd, args, { cwd } = {}) {
 }
 
 /**
- * The tar that reads the upstream `.tar.xz` (linux) and `.zip` (macOS)
- * artifacts. node-tar cannot decode xz, so the pinned Windows system tar
- * (bsdtar, Windows 10+) is used when packing runs on a win32 host — the
- * bare `tar` name is ambiguous there (Git for Windows ships GNU tar in
- * PATH, which misparses drive-letter paths as remote hosts); every other
- * platform keeps PATH resolution.
+ * The tar that reads the upstream `.zip` (Windows + macOS) and `.tar.xz`
+ * (linux) artifacts. node-tar cannot decode xz/zip, so the pinned Windows
+ * system tar (bsdtar, Windows 10+) is used when packing runs on a win32
+ * host — the bare `tar` name is ambiguous there (Git for Windows ships
+ * GNU tar in PATH, which misparses drive-letter paths as remote hosts);
+ * every other platform keeps PATH resolution.
  */
 function tarCommand() {
 	if (process.platform === "win32" && process.env.SystemRoot) {
@@ -256,21 +253,10 @@ async function buildPlatform(key, spec, record) {
 	const name = basename(new URL(official).pathname)
 	const artifact = await fetchOfficial(name, official, record)
 
-	if (spec.kind === "7z") {
-		// GyanD .7z holds ffprobe.exe at the archive root. Use the
-		// cross-platform 7z from @hoardodile/7z-bin (dev dependency) so the
-		// build doesn't depend on a system 7z.
-		let seven
-		try {
-			seven = require("@hoardodile/7z-bin")
-		} catch (err) {
-			throw new Error("extract the GyanD .7z needs @hoardodile/7z-bin (npm install)")
-		}
-		if (!seven) throw new Error("@hoardodile/7z-bin resolved to null on this host")
-		run(seven, ["x", artifact, `-o${stage}`, "-y", "-bd"])
-	} else {
-		extract(artifact, stage)
-	}
+	// Every platform archive (GyanD .zip, macOS .zip, linux .tar.xz) is
+	// extracted through the pinned bsdtar — node-tar cannot decode xz/zip,
+	// and no 7z dependency is needed (GyanD ships a .zip variant).
+	extract(artifact, stage)
 
 	const file = findFile(stage, BINARY)
 	if (!file) throw new Error(`${BINARY} not found in ${name}`)

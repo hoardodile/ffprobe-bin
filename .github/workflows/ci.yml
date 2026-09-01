@@ -25,11 +25,33 @@ jobs:
         run: npm pack --dry-run
       - name: Install dependencies (node-tar)
         run: npm install --ignore-scripts --no-package-lock
+      - name: Release assets available?
+        id: release
+        shell: bash
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if gh release view "v${VERSION}" >/dev/null 2>&1; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Install native ffprobe (download + sha256 + unpack + version smoke)
+        if: steps.release.outputs.available == 'true'
         run: node install.js
+      - name: Skip install smoke (no release yet)
+        if: steps.release.outputs.available != 'true'
+        shell: bash
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "::notice::no v${VERSION} release assets yet; skipping install smoke (runs once the release exists)"
       - name: Smoke test index.js
+        if: steps.release.outputs.available == 'true'
         run: |
           node -e "const fs=require('node:fs');const{spawnSync}=require('node:child_process');const p=require('./');if(!p)throw new Error('index.js resolved to null');if(!fs.existsSync(p))throw new Error('binary missing: '+p);const r=spawnSync(p,['-version'],{stdio:['ignore','pipe','ignore'],timeout:30000});if(r.status!==0)throw new Error('ffprobe -version exited '+r.status);if(!String(r.stdout).includes('9.0.1'))throw new Error('unexpected ffprobe version: '+String(r.stdout).split('\n')[0]);console.log('smoke ok:',p)"
+      - name: Skip index.js smoke (no release yet)
+        if: steps.release.outputs.available != 'true'
+        shell: bash
+        run: echo "::notice::skipping index.js smoke until a release exists for this version"
       - name: Check FFPROBE_BIN_PATH override
         run: |
           node -e "process.env['FFPROBE_BIN_PATH']='C:/override/ffprobe.exe';if(require('./')!=='C:/override/ffprobe.exe')throw new Error('FFPROBE_BIN_PATH override ignored');console.log('override ok')"
@@ -49,7 +71,10 @@ jobs:
           BASE="https://github.com/hoardodile/ffprobe-bin/releases/download/v${VERSION}"
           TMP=$(mktemp -d)
           trap 'rm -rf "$TMP"' EXIT
-          curl -fsSL "${BASE}/SHA256SUMS.txt" -o "$TMP/SHA256SUMS.txt"
+          if ! curl -fsSL "${BASE}/SHA256SUMS.txt" -o "$TMP/SHA256SUMS.txt"; then
+            echo "no release assets yet for v${VERSION}; skipping verification"
+            exit 0
+          fi
           for key in $(jq -r '.assets | keys[]' assets.json); do
             file=$(jq -r ".assets[\"${key}\"].file" assets.json)
             want=$(jq -r ".assets[\"${key}\"].sha256" assets.json)
