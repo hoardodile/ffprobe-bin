@@ -5,18 +5,18 @@
 //   node scripts/build-assets.mjs            # build + upload
 //   node scripts/build-assets.mjs --skip-upload   # build locally only
 //
-// Steps: download the upstream static ffprobe builds (GyanD/codexffmpeg
-// Windows, evermeet.cx + osxexperts.net macOS, johnvansickle.com Linux
-// — the same sources ffprobe-static uses), extract ffprobe, tar.gz each
-// platform into dist/, write assets.json (the SHA-256 source of truth
-// consumed by install.js) and SHA256SUMS.txt, then upload everything to
-// the release tagged v<package.json version>.
+// Steps: download the upstream static ffmpeg builds (BtbN/FFmpeg-Builds
+// for Windows + Linux, evermeet.cx + osxexperts.net for macOS — the
+// up-to-date 9.0 builders), extract ffprobe, tar.gz each platform into
+// dist/, write assets.json (the SHA-256 source of truth consumed by
+// install.js) and SHA256SUMS.txt, then upload everything to the release
+// tagged v<package.json version>.
 //
 // Idempotent: rerunning reuses cached upstream downloads, skips release
 // assets that already exist and leaves existing releases untouched.
 // Pass --skip-upload to build locally without touching GitHub.
 //
-// The upstream "release"-tracking URLs (johnvansickle, evermeet,
+// The upstream "latest"-tracking URLs (BtbN's `latest` release, evermeet,
 // osxexperts) are mutable — they move to whatever the builder currently
 // ships. Their SHA-256 is therefore recorded on first download in
 // .assets-cache/OFFICIAL_SHASUMS.json and re-verified on every rerun: a
@@ -58,18 +58,25 @@ const VERSION = "9.0.1"
 const BINARY_NAMES = { win32: "ffprobe.exe", darwin: "ffprobe", linux: "ffprobe" }
 const binaryNameFor = (key) => BINARY_NAMES[key.split("-")[0]]
 
-// Upstream download bases. Filenames are derived below so the only field
-// you normally touch on a bump is VERSION.
-const GYAN_BASE = `https://github.com/GyanD/codexffmpeg/releases/download/${VERSION}`
+// Upstream download bases. BtbN/FFmpeg-Builds is the actively-maintained
+// 9.0 source for Windows + Linux (its asset names use the major.minor
+// branch, e.g. n9.0, so this stays 9.0 for the whole 9.0.x series);
+// evermeet.cx + osxexperts.net provide the macOS builds. The only fields
+// you normally touch on a bump are VERSION (and BTBN_MM if the branch
+// major.minor changes).
+const BTBN_BASE = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest"
+const BTBN_MM = VERSION.split(".").slice(0, 2).join(".")
 const EVERMEET_BASE = "https://evermeet.cx/ffmpeg/"
 const OSXEXPERT_BASE = "https://www.osxexperts.net/"
-const JVS_BASE = "https://johnvansickle.com/ffmpeg/releases/"
 
 const ARM_MAJOR = VERSION.split(".")[0] // osxexperts filenames embed the major only: ffprobe9arm.zip
 
+// BtbN builds win64 / linux64 / linuxarm64 (no 32-bit x86 or armv7), so we
+// ship only those + the macOS builds. Drop linux-ia32 / linux-arm; the
+// only 32-bit source (johnvansickle) has not updated past 7.0.2.
 const PLATFORMS = {
 	"win32-x64": {
-		official: [`${GYAN_BASE}/ffmpeg-${VERSION}-essentials_build.zip`],
+		official: [`${BTBN_BASE}/ffmpeg-n${BTBN_MM}-latest-win64-gpl-${BTBN_MM}.zip`],
 		kind: "zip",
 	},
 	"darwin-x64": {
@@ -81,19 +88,11 @@ const PLATFORMS = {
 		kind: "zip",
 	},
 	"linux-x64": {
-		official: [`${JVS_BASE}ffmpeg-release-amd64-static.tar.xz`],
-		kind: "tar.xz",
-	},
-	"linux-ia32": {
-		official: [`${JVS_BASE}ffmpeg-release-i686-static.tar.xz`],
+		official: [`${BTBN_BASE}/ffmpeg-n${BTBN_MM}-latest-linux64-gpl-${BTBN_MM}.tar.xz`],
 		kind: "tar.xz",
 	},
 	"linux-arm64": {
-		official: [`${JVS_BASE}ffmpeg-release-arm64-static.tar.xz`],
-		kind: "tar.xz",
-	},
-	"linux-arm": {
-		official: [`${JVS_BASE}ffmpeg-release-armhf-static.tar.xz`],
+		official: [`${BTBN_BASE}/ffmpeg-n${BTBN_MM}-latest-linuxarm64-gpl-${BTBN_MM}.tar.xz`],
 		kind: "tar.xz",
 	},
 }
@@ -259,9 +258,9 @@ async function buildPlatform(key, spec, record) {
 	const name = basename(new URL(official).pathname)
 	const artifact = await fetchOfficial(name, official, record)
 
-	// Every platform archive (GyanD .zip, macOS .zip, linux .tar.xz) is
-	// extracted through the pinned bsdtar — node-tar cannot decode xz/zip,
-	// and no 7z dependency is needed (GyanD ships a .zip variant).
+	// Every platform archive (BtbN/Windows .zip, macOS .zip, linux .tar.xz)
+	// is extracted through the pinned bsdtar — node-tar cannot decode
+	// xz/zip, and no 7z dependency is needed.
 	extract(artifact, tmp)
 
 	// Copy only this repo's binary into the clean stage dir so the packed
@@ -284,8 +283,11 @@ function smokeWin32(stage) {
 		timeout: 30_000,
 	})
 	if (res.status !== 0) throw new Error(`${bin} failed its smoke run (exit ${res.status})`)
-	if (!String(res.stdout).includes(VERSION)) {
-		throw new Error(`${bin} does not report ffprobe ${VERSION} (expected in 'ffprobe -version')`)
+	// Builders differ in the patch level (9.0 vs 9.0.1), so require the
+	// major.minor (9.0), not the exact patch.
+	const mm = VERSION.split(".").slice(0, 2).join(".")
+	if (!String(res.stdout).split("\n")[0].includes(mm)) {
+		throw new Error(`${bin} does not report ffprobe ${mm} (expected in 'ffprobe -version')`)
 	}
 }
 

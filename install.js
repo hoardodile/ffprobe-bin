@@ -165,10 +165,12 @@ function smokeTest() {
 	if (res.status !== 0) {
 		throw new Error(`${binPath} failed its smoke run (exit ${res.status})`)
 	}
-	const expected = String(manifest?.ffprobe ?? "")
-	if (expected && !String(res.stdout).includes(expected)) {
+	// Builders differ in the patch level (9.0 vs 9.0.1), so require the
+	// major.minor from assets.json, not the exact patch.
+	const mm = String(manifest?.ffprobe ?? "").split(".").slice(0, 2).join(".")
+	if (mm && !String(res.stdout).split("\n")[0].includes(mm)) {
 		throw new Error(
-			`${binPath} does not report ffprobe ${expected} (expected in 'ffprobe -version')`,
+			`${binPath} does not report ffprobe ${mm} (expected in 'ffprobe -version')`,
 		)
 	}
 }

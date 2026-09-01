@@ -12,13 +12,13 @@ Static **ffprobe 9.0.1** binary as an npm package. The package is only a few KB;
 | darwin-x64 | ffprobe |
 | darwin-arm64 | ffprobe |
 | linux-x64 | ffprobe |
-| linux-ia32 | ffprobe |
 | linux-arm64 | ffprobe |
-| linux-arm | ffprobe |
 
-The binaries are the statically linked builds from the same upstreams [`ffprobe-static`](https://github.com/eugeneware/ffmpeg-static) uses: [GyanD/codexffmpeg](https://github.com/GyanD/codexffmpeg) (Windows), [evermeet.cx](https://evermeet.cx/ffmpeg/) (macOS x64), [osxexperts.net](https://www.osxexperts.net/) (macOS arm64) and [johnvansickle.com](https://johnvansickle.com/ffmpeg/) (Linux).
+The binaries are statically linked GPL builds from the up-to-date 9.0 builders: [BtbN/FFmpeg-Builds](https://github.com/BtbN/FFmpeg-Builds) (Windows + Linux), [evermeet.cx](https://evermeet.cx/ffmpeg/) (macOS x64) and [osxexperts.net](https://www.osxexperts.net/) (macOS arm64).
 
-Unsupported platforms (e.g. `win32-ia32`, `win32-arm64` — no maintained 9.0.1 build) resolve to `null`; consumers should degrade to a PATH `ffprobe`.
+Windows and Linux ship ffprobe `9.0.1`; the macOS arm64 build is `9.0` (the third-party builders differ by patch level).
+
+Unsupported platforms (`win32-ia32`, `win32-arm64`, `linux-ia32`, `linux-arm` — no maintained 9.0.1 build) resolve to `null`; consumers should degrade to a PATH `ffprobe`.
 
 ## Usage
 
@@ -28,7 +28,7 @@ const ffprobe = require("@hoardodile/ffprobe-bin") // path or null
 
 - `FFPROBE_BIN_PATH` — overrides the returned path.
 - `FFPROBE_BINARIES_URL` — overrides the download base URL.
-- Install verifies SHA-256 (`assets.json`) and requires ffprobe `9.0.1` in the `ffprobe -version` output.
+- Install verifies SHA-256 (`assets.json`) and requires ffprobe `9.0` (major.minor) in the `ffprobe -version` output.
 
 ## Runtime download (Electron)
 

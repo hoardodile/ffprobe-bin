@@ -3,31 +3,23 @@
 	"assets": {
 		"win32-x64": {
 			"file": "win32-x64.tar.gz",
-			"sha256": "db5ab2fadb8484fe57fafc8601ae13d1acaad0eb9864837df40571ac3485cf8c"
+			"sha256": "aefb793810362596fb8f973f13994e378cc90e2325a5cae4749476a6ae666607"
 		},
 		"darwin-x64": {
 			"file": "darwin-x64.tar.gz",
-			"sha256": "7438fb5c9b80080cef006cc024755020e7c052e259de165a020ea38b037e0491"
+			"sha256": "93fbd00bde822155c674ab500ece8da2b3669b37f78c3d6565a13dddbdb466de"
 		},
 		"darwin-arm64": {
 			"file": "darwin-arm64.tar.gz",
-			"sha256": "54d5d13c58a37f9ba142a9a8223c80ae1be1f307f4b3c889e037ede519a8d22d"
+			"sha256": "93feb43f27ed0f62c2909823b6c5dbdae80b1558195d926afd8b1d3bdc2cab91"
 		},
 		"linux-x64": {
 			"file": "linux-x64.tar.gz",
-			"sha256": "e04636f50b50cca89bb19e6d707cad03e180b6ec0f2f40c8e7cbb43fcd030585"
-		},
-		"linux-ia32": {
-			"file": "linux-ia32.tar.gz",
-			"sha256": "d30aa73b688c2e8c744d8a2067215e0049ab50cc9f56f551f1254c93f0cf72a0"
+			"sha256": "e7cce342dbc68f8e1fe2a21c79fb0c24ac28856698378011535aae398704c269"
 		},
 		"linux-arm64": {
 			"file": "linux-arm64.tar.gz",
-			"sha256": "a720befb08cc4be2560af2017dfba043461dd78db675957431ddf5a1b2a12a9e"
-		},
-		"linux-arm": {
-			"file": "linux-arm.tar.gz",
-			"sha256": "084f535fe12f59ce932904b38501ab5d700d2a1e5d5ea9a975bdb5a00d95cc24"
+			"sha256": "fb6e85f77151ba8373fef054fe0b1103867288108f4f8a17757f161de5a03e6f"
 		}
 	}
 }

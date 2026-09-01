@@ -12,13 +12,13 @@
 | darwin-x64 | ffprobe |
 | darwin-arm64 | ffprobe |
 | linux-x64 | ffprobe |
-| linux-ia32 | ffprobe |
 | linux-arm64 | ffprobe |
-| linux-arm | ffprobe |
 
-二进制的来源与 [`ffprobe-static`](https://github.com/eugeneware/ffmpeg-static) 相同：[GyanD/codexffmpeg](https://github.com/GyanD/codexffmpeg)（Windows）、[evermeet.cx](https://evermeet.cx/ffmpeg/)（macOS x64）、[osxexperts.net](https://www.osxexperts.net/)（macOS arm64）和 [johnvansickle.com](https://johnvansickle.com/ffmpeg/)（Linux）。
+二进制的来源是维护中的 9.0 构建者：[BtbN/FFmpeg-Builds](https://github.com/BtbN/FFmpeg-Builds)（Windows + Linux）、[evermeet.cx](https://evermeet.cx/ffmpeg/)（macOS x64）和 [osxexperts.net](https://www.osxexperts.net/)（macOS arm64）。
 
-不支持的平台（如 `win32-ia32`、`win32-arm64` —— 没有维护中的 9.0.1 构建）返回 `null`；使用者应回退到 PATH 上的 `ffprobe`。
+Windows 与 Linux 为 ffprobe `9.0.1`；macOS arm64 构建为 `9.0`（各第三方构建者的补丁版本不同）。
+
+不支持的平台（`win32-ia32`、`win32-arm64`、`linux-ia32`、`linux-arm` —— 没有维护中的 9.0.1 构建）返回 `null`；使用者应回退到 PATH 上的 `ffprobe`。
 
 ## 使用
 
@@ -28,7 +28,7 @@ const ffprobe = require("@hoardodile/ffprobe-bin") // 路径或 null
 
 - `FFPROBE_BIN_PATH` — 覆盖返回的路径。
 - `FFPROBE_BINARIES_URL` — 覆盖下载源。
-- 安装时校验 SHA-256（`assets.json`）并要求 `ffprobe -version` 输出含 "9.0.1"。
+- 安装时校验 SHA-256（`assets.json`）并要求 `ffprobe -version` 输出含 "9.0"（主.次版本）。
 
 ## 运行时下载（Electron）
 

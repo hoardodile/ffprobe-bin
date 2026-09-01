@@ -8,25 +8,21 @@ const path = require("node:path")
 const os = require("node:os")
 
 // Statically linked ffprobe builds, sourced at build-assets time from the
-// same upstreams ffprobe-static uses (GyanD/codexffmpeg Windows,
-// evermeet.cx / osxexperts.net macOS, johnvansickle.com Linux):
+// up-to-date 9.0 builders (BtbN/FFmpeg-Builds Windows + Linux,
+// evermeet.cx + osxexperts.net macOS):
 //   win32-x64      -> bin/win32-x64/ffprobe.exe
 //   darwin-x64     -> bin/darwin-x64/ffprobe
 //   darwin-arm64   -> bin/darwin-arm64/ffprobe
 //   linux-x64      -> bin/linux-x64/ffprobe
-//   linux-ia32     -> bin/linux-ia32/ffprobe
 //   linux-arm64    -> bin/linux-arm64/ffprobe
-//   linux-arm      -> bin/linux-arm/ffprobe
-// win32-ia32 / win32-arm64 have no maintained 9.0.1 build and resolve to
-// null.
+// win32-ia32 / win32-arm64 / linux-ia32 / linux-arm have no maintained
+// 9.0.1 build and resolve to null.
 const BINARIES = {
 	"win32-x64": "ffprobe.exe",
 	"darwin-x64": "ffprobe",
 	"darwin-arm64": "ffprobe",
 	"linux-x64": "ffprobe",
-	"linux-ia32": "ffprobe",
 	"linux-arm64": "ffprobe",
-	"linux-arm": "ffprobe",
 }
 
 const ENV_VAR = "FFPROBE_BIN_PATH"
