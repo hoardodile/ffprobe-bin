@@ -4,6 +4,12 @@ on:
   push:
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish to npm via Trusted Publishing (off by default)."
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -26,7 +32,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-  # Publishes the package to npm. Trusted publishing (OIDC): the id-token
+  # Publishes the package to npm but only when explicitly requested via the
+  # workflow_dispatch `publish` input (default off) — a tag push builds and
+  # uploads assets but never publishes on its own. Trusted publishing (OIDC)
   # replaces registry credentials; provenance is requested explicitly. The
   # npm-side trust relationship is one-time setup per package (npm >=
   # 11.11), see README: `npm trust github @hoardodile/ffprobe-bin --file
@@ -34,6 +42,7 @@ jobs:
   publish:
     name: publish to npm
     needs: build
+    if: ${{ inputs.publish == true }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
