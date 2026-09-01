@@ -51,8 +51,12 @@ const DIST_DIR = join(ROOT, "dist")
 
 // --- ffprobe release to mirror (edit when bumping) ---
 const VERSION = "9.0.1"
-const EXT = process.platform === "win32" ? ".exe" : ""
-const BINARY = `ffprobe${EXT}` // only this binary is extracted per repo
+
+// Only this binary is extracted per repo. The suffix depends on the TARGET
+// platform, not the build host: win32 names it ffprobe.exe, darwin/linux
+// ffprobe.
+const BINARY_NAMES = { win32: "ffprobe.exe", darwin: "ffprobe", linux: "ffprobe" }
+const binaryNameFor = (key) => BINARY_NAMES[key.split("-")[0]]
 
 // Upstream download bases. Filenames are derived below so the only field
 // you normally touch on a bump is VERSION.
@@ -247,7 +251,9 @@ async function fetchOfficial(name, url, record) {
 
 async function buildPlatform(key, spec, record) {
 	const stage = join(WORK_DIR, `stage-${key}`)
+	const tmp = join(WORK_DIR, `tmp-${key}`)
 	mkdirSync(stage, { recursive: true })
+	mkdirSync(tmp, { recursive: true })
 
 	const official = spec.official[0]
 	const name = basename(new URL(official).pathname)
@@ -256,19 +262,23 @@ async function buildPlatform(key, spec, record) {
 	// Every platform archive (GyanD .zip, macOS .zip, linux .tar.xz) is
 	// extracted through the pinned bsdtar — node-tar cannot decode xz/zip,
 	// and no 7z dependency is needed (GyanD ships a .zip variant).
-	extract(artifact, stage)
+	extract(artifact, tmp)
 
-	const file = findFile(stage, BINARY)
-	if (!file) throw new Error(`${BINARY} not found in ${name}`)
-	const out = join(stage, BINARY)
-	if (file !== out) copyFileSync(file, out)
+	// Copy only this repo's binary into the clean stage dir so the packed
+	// artifact carries exactly one file (no ffmpeg/ffplay extras).
+	const binary = binaryNameFor(key)
+	const file = findFile(tmp, binary)
+	if (!file) throw new Error(`${binary} not found in ${name}`)
+	const out = join(stage, binary)
+	copyFileSync(file, out)
 	chmodSync(out, 0o755)
+	rmSync(tmp, { recursive: true, force: true })
 	return stage
 }
 
 /** Smoke-run a win32 binary on the win32 build host (like 7z-bin). */
 function smokeWin32(stage) {
-	const bin = join(stage, BINARY)
+	const bin = join(stage, "ffprobe.exe")
 	const res = spawnSync(bin, ["-version"], {
 		stdio: ["ignore", "pipe", "ignore"],
 		timeout: 30_000,
