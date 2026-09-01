@@ -30,7 +30,8 @@ jobs:
         shell: bash
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          if gh release view "v${VERSION}" >/dev/null 2>&1; then
+          REPO="${GITHUB_REPOSITORY}"
+          if curl -fsSL -o /dev/null "https://github.com/${REPO}/releases/download/v${VERSION}/SHA256SUMS.txt"; then
             echo "available=true" >> "$GITHUB_OUTPUT"
           else
             echo "available=false" >> "$GITHUB_OUTPUT"
