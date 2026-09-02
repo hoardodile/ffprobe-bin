@@ -2,24 +2,24 @@
 	"ffprobe": "9.0.1",
 	"assets": {
 		"win32-x64": {
-			"file": "win32-x64.tar.gz",
-			"sha256": "aefb793810362596fb8f973f13994e378cc90e2325a5cae4749476a6ae666607"
+			"file": "ffprobe-win32-x64",
+			"sha256": "19202b23c0043f15ad1b7bce2344f406fd52bd6efd8f995ce02e7392a1cec52f"
 		},
 		"darwin-x64": {
-			"file": "darwin-x64.tar.gz",
-			"sha256": "93fbd00bde822155c674ab500ece8da2b3669b37f78c3d6565a13dddbdb466de"
+			"file": "ffprobe-darwin-x64",
+			"sha256": "a1508faa028bfb8e20c9d182c3d41fcff29ee7584ae21b2d6c357472a3ecbc24"
 		},
 		"darwin-arm64": {
-			"file": "darwin-arm64.tar.gz",
-			"sha256": "93feb43f27ed0f62c2909823b6c5dbdae80b1558195d926afd8b1d3bdc2cab91"
+			"file": "ffprobe-darwin-arm64",
+			"sha256": "e11c17e8200b3ee4c4c186d245e2b4053f01d56957336c1817fca0b997469106"
 		},
 		"linux-x64": {
-			"file": "linux-x64.tar.gz",
-			"sha256": "e7cce342dbc68f8e1fe2a21c79fb0c24ac28856698378011535aae398704c269"
+			"file": "ffprobe-linux-x64",
+			"sha256": "1daba187c0d9a3cf99f7e1df12ad89b755ad4cc130087afd88aa914ba2be04ad"
 		},
 		"linux-arm64": {
-			"file": "linux-arm64.tar.gz",
-			"sha256": "fb6e85f77151ba8373fef054fe0b1103867288108f4f8a17757f161de5a03e6f"
+			"file": "ffprobe-linux-arm64",
+			"sha256": "4de12619e51c814a3289d3f655c26ad73d23aaee433e053dda472052bd679b32"
 		}
 	}
 }

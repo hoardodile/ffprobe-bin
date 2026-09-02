@@ -14,9 +14,9 @@ Static **ffprobe 9.0.1** binary as an npm package. The package is only a few KB;
 | linux-x64 | ffprobe |
 | linux-arm64 | ffprobe |
 
-The binaries are statically linked GPL builds from the up-to-date 9.0 builders: [BtbN/FFmpeg-Builds](https://github.com/BtbN/FFmpeg-Builds) (Windows + Linux), [evermeet.cx](https://evermeet.cx/ffmpeg/) (macOS x64) and [osxexperts.net](https://www.osxexperts.net/) (macOS arm64).
+The binaries are statically linked GPL builds from the up-to-date 9.0 builders: [GyanD/codexffmpeg](https://github.com/GyanD/codexffmpeg) **essentials** for Windows (a reduced build — the common decoders + mjpeg encoder, without the heavy encoder libraries), [BtbN/FFmpeg-Builds](https://github.com/BtbN/FFmpeg-Builds) for Linux, and [evermeet.cx](https://evermeet.cx/ffmpeg/) (macOS x64) + [osxexperts.net](https://www.osxexperts.net/) (macOS arm64).
 
-Windows and Linux ship ffprobe `9.0.1`; the macOS arm64 build is `9.0` (the third-party builders differ by patch level).
+The release assets are the raw, uncompressed binaries (the size on the release page is the real on-disk size — no tar/gz wrapper). Windows and Linux ship ffprobe `9.0.1`; the macOS arm64 build is `9.0` (the third-party builders differ by patch level).
 
 Unsupported platforms (`win32-ia32`, `win32-arm64`, `linux-ia32`, `linux-arm` — no maintained 9.0.1 build) resolve to `null`; consumers should degrade to a PATH `ffprobe`.
 
@@ -32,15 +32,14 @@ const ffprobe = require("@hoardodile/ffprobe-bin") // path or null
 
 ## Runtime download (Electron)
 
-Skip bundling binaries: let your app download them from the release on demand, verify, and unpack:
+Skip bundling binaries: let your app download them from the release on demand, verify, and chmod:
 
 ```
-https://github.com/hoardodile/ffprobe-bin/releases/download/v<version>/<platform>.tar.gz
+https://github.com/hoardodile/ffprobe-bin/releases/download/v<version>/ffprobe-<platform>-<arch>
 ```
 
-- No authentication required; contents: `ffprobe` (or `ffprobe.exe` on Windows).
-- Checksums: `assets.json` in the package, or `SHA256SUMS.txt` on the release.
-- Unpack with `tar -xf`.
+- No authentication required; the asset is the raw `ffprobe` binary (or `ffprobe.exe` on Windows).
+- Checksums: `assets.json` in the package, or `SHA256SUMS.txt` on the release. Verify the SHA-256, then `chmod +x` on macOS/Linux.
 
 ## Building the assets + releasing
 

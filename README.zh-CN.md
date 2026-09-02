@@ -14,9 +14,9 @@
 | linux-x64 | ffprobe |
 | linux-arm64 | ffprobe |
 
-二进制的来源是维护中的 9.0 构建者：[BtbN/FFmpeg-Builds](https://github.com/BtbN/FFmpeg-Builds)（Windows + Linux）、[evermeet.cx](https://evermeet.cx/ffmpeg/)（macOS x64）和 [osxexperts.net](https://www.osxexperts.net/)（macOS arm64）。
+二进制的来源是维护中的 9.0 构建者：[GyanD/codexffmpeg](https://github.com/GyanD/codexffmpeg) **essentials**（Windows，精简构建——保留常用解码器与 mjpeg 编码器，去掉重型编码库）、[BtbN/FFmpeg-Builds](https://github.com/BtbN/FFmpeg-Builds)（Linux）、[evermeet.cx](https://evermeet.cx/ffmpeg/)（macOS x64）和 [osxexperts.net](https://www.osxexperts.net/)（macOS arm64）。
 
-Windows 与 Linux 为 ffprobe `9.0.1`；macOS arm64 构建为 `9.0`（各第三方构建者的补丁版本不同）。
+release 资产是**未压缩的原始二进制**（release 页面显示的大小即真实占用，无 tar/gz 包装）。Windows 与 Linux 为 ffprobe `9.0.1`；macOS arm64 构建为 `9.0`（各第三方构建者的补丁版本不同）。
 
 不支持的平台（`win32-ia32`、`win32-arm64`、`linux-ia32`、`linux-arm` —— 没有维护中的 9.0.1 构建）返回 `null`；使用者应回退到 PATH 上的 `ffprobe`。
 
@@ -32,15 +32,14 @@ const ffprobe = require("@hoardodile/ffprobe-bin") // 路径或 null
 
 ## 运行时下载（Electron）
 
-不打包二进制：让应用按需从 release 下载、校验并解压：
+不打包二进制：让应用按需从 release 下载、校验并 `chmod +x`：
 
 ```
-https://github.com/hoardodile/ffprobe-bin/releases/download/v<版本>/<平台>.tar.gz
+https://github.com/hoardodile/ffprobe-bin/releases/download/v<版本>/ffprobe-<平台>-<架构>
 ```
 
-- 免鉴权；内容为 `ffprobe`（Windows 为 `ffprobe.exe`）。
-- 校验：包内 `assets.json`，或 release 上的 `SHA256SUMS.txt`。
-- 解压：`tar -xf`。
+- 免鉴权；资产是原始 `ffprobe` 二进制（Windows 为 `ffprobe.exe`）。
+- 校验：包内 `assets.json`，或 release 上的 `SHA256SUMS.txt`。校验 SHA-256 后，macOS/Linux 需 `chmod +x`。
 
 ## 构建资产 / 发版
 

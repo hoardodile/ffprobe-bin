@@ -42,7 +42,6 @@ import {
 import { basename, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { spawnSync } from "node:child_process"
-import { create as tarCreate } from "tar"
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url))
 const CACHE_DIR = join(ROOT, ".assets-cache")
@@ -66,17 +65,25 @@ const binaryNameFor = (key) => BINARY_NAMES[key.split("-")[0]]
 // major.minor changes).
 const BTBN_BASE = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest"
 const BTBN_MM = VERSION.split(".").slice(0, 2).join(".")
+const GYAN_BASE = `https://github.com/GyanD/codexffmpeg/releases/download/${VERSION}`
 const EVERMEET_BASE = "https://evermeet.cx/ffmpeg/"
 const OSXEXPERT_BASE = "https://www.osxexperts.net/"
 
 const ARM_MAJOR = VERSION.split(".")[0] // osxexperts filenames embed the major only: ffprobe9arm.zip
 
-// BtbN builds win64 / linux64 / linuxarm64 (no 32-bit x86 or armv7), so we
-// ship only those + the macOS builds. Drop linux-ia32 / linux-arm; the
-// only 32-bit source (johnvansickle) has not updated past 7.0.2.
+// Asset names are the raw single binary per platform (uncompressed, so the
+// size shown on the GitHub release is the real on-disk size), mirroring
+// ffmpeg-static's `ffprobe-<platform>-<arch>` naming.
+const assetNameFor = (key) => `ffprobe-${key}`
+
+// Windows uses GyanD "essentials" (a reduced build — keeps the common
+// decoder + mjpeg encoder that hoardodile's thumbnailer needs, drops the
+// heavy encoder libraries) so the binary stays close to ffmpeg-static's
+// size. Linux comes from BtbN (up-to-date 9.0), macOS from evermeet /
+// osxexperts. Drop linux-ia32 / linux-arm — no maintained 9.0.1 builder.
 const PLATFORMS = {
 	"win32-x64": {
-		official: [`${BTBN_BASE}/ffmpeg-n${BTBN_MM}-latest-win64-gpl-${BTBN_MM}.zip`],
+		official: [`${GYAN_BASE}/ffmpeg-${VERSION}-essentials_build.zip`],
 		kind: "zip",
 	},
 	"darwin-x64": {
@@ -258,7 +265,7 @@ async function buildPlatform(key, spec, record) {
 	const name = basename(new URL(official).pathname)
 	const artifact = await fetchOfficial(name, official, record)
 
-	// Every platform archive (BtbN/Windows .zip, macOS .zip, linux .tar.xz)
+	// Every platform archive (GyanD/Windows .zip, macOS .zip, linux .tar.xz)
 	// is extracted through the pinned bsdtar — node-tar cannot decode
 	// xz/zip, and no 7z dependency is needed.
 	extract(artifact, tmp)
@@ -292,20 +299,12 @@ function smokeWin32(stage) {
 }
 
 function pack(key, stage) {
-	const out = join(DIST_DIR, `${key}.tar.gz`)
-	// node-tar produces the archive (no system tar anywhere in packing);
-	// fixed mtime + a portable gzip header make the output reproducible
-	// across machines, so assets.json stays the single source of truth.
-	tarCreate(
-		{
-			file: out,
-			cwd: stage,
-			gzip: { portable: true },
-			mtime: new Date(0),
-			sync: true,
-		},
-		["."],
-	)
+	// Uncompressed single binary (no tar/gz wrapper), so the size on the
+	// release is the real on-disk binary size. The executable bit survives
+	// because the consumer chmods 0755 at install time.
+	const out = join(DIST_DIR, assetNameFor(key))
+	copyFileSync(join(stage, binaryNameFor(key)), out)
+	chmodSync(out, 0o755)
 	return out
 }
 
@@ -326,7 +325,7 @@ function publishRelease(tag) {
 			`ffprobe ${VERSION} static binaries for @hoardodile/ffprobe-bin@${tag.slice(1)}.`,
 			"",
 			"Assets:",
-			...Object.keys(PLATFORMS).map((k) => `- ${k}: ${k}.tar.gz`),
+			...Object.keys(PLATFORMS).map((k) => `- ${k}: ${assetNameFor(k)}`),
 			"",
 			"Verify with SHA256SUMS.txt.",
 		].join("\n")
@@ -342,7 +341,7 @@ function publishRelease(tag) {
 		console.info(`[ffprobe-bin] created release ${tag}`)
 	}
 	const files = readdirSync(DIST_DIR)
-		.filter((f) => f.endsWith(".tar.gz"))
+		.filter((f) => f !== "SHA256SUMS.txt")
 		.map((f) => join(DIST_DIR, f))
 	files.push(join(DIST_DIR, "SHA256SUMS.txt"))
 	for (const file of files) {
@@ -373,8 +372,8 @@ async function main() {
 		const stage = await buildPlatform(key, spec, record)
 		if (key === "win32-x64") smokeWin32(stage)
 		const out = pack(key, stage)
-		assets[key] = { file: `${key}.tar.gz`, sha256: sha256(out) }
-		console.info(`[ffprobe-bin] built ${key}.tar.gz`)
+		assets[key] = { file: basename(out), sha256: sha256(out) }
+		console.info(`[ffprobe-bin] built ${basename(out)}`)
 	}
 
 	writeFileSync(
@@ -384,7 +383,7 @@ async function main() {
 
 	const sums =
 		readdirSync(DIST_DIR)
-			.filter((f) => f.endsWith(".tar.gz"))
+			.filter((f) => f !== "SHA256SUMS.txt")
 			.map((f) => `${sha256(join(DIST_DIR, f))}  ${f}`)
 			.join("\n") + "\n"
 	writeFileSync(join(DIST_DIR, "SHA256SUMS.txt"), sums)

@@ -1,32 +1,24 @@
 #!/usr/bin/env node
 "use strict"
 
-// Download and unpack the ffprobe static binary for this platform, the
-// same install-time model as @hoardodile/7z-bin and ffprobe-static: the
-// npm tarball stays tiny and the binary lands at install time.
+// Download the ffprobe static binary for this platform. The asset is the
+// raw single-file binary (uncompressed — the release page shows the real
+// on-disk size), so install is a plain download + chmod, no tar/gz/gunzip.
 //
-// The binaries are pre-built per platform by scripts/build-assets.mjs
-// (from the official/static upstream builds: GyanD/codexffmpeg Windows,
-// evermeet.cx + osxexperts.net macOS, johnvansickle.com Linux) and
-// hosted on this repo's GitHub Releases. The release tag always matches
-// this package's own version; the ffprobe version and the SHA-256 of each
-// asset live in assets.json.
+//   win32-x64      -> ffprobe-win32-x64    (ffprobe.exe)
+//   darwin-x64     -> ffprobe-darwin-x64   (ffprobe)
+//   darwin-arm64   -> ffprobe-darwin-arm64 (ffprobe)
+//   linux-x64      -> ffprobe-linux-x64    (ffprobe)
+//   linux-arm64    -> ffprobe-linux-arm64  (ffprobe)
 //
-//   win32-x64      -> win32-x64.tar.gz    (ffprobe.exe)
-//   darwin-x64     -> darwin-x64.tar.gz   (ffprobe)
-//   darwin-arm64   -> darwin-arm64.tar.gz (ffprobe)
-//   linux-x64      -> linux-x64.tar.gz    (ffprobe)
-//   linux-ia32     -> linux-ia32.tar.gz   (ffprobe)
-//   linux-arm64    -> linux-arm64.tar.gz  (ffprobe)
-//   linux-arm      -> linux-arm.tar.gz    (ffprobe)
-//
-// A failed download/unpack exits non-zero so the package manager skips
-// the optional dependency and the host degrades to a PATH `ffprobe`.
+// A failed download exits non-zero so the package manager skips the
+// optional dependency and the host degrades to a PATH `ffprobe`.
 // `FFPROBE_BINARIES_URL` overrides the GitHub release base URL.
 
 const { createHash } = require("node:crypto")
 const {
 	chmodSync,
+	copyFileSync,
 	existsSync,
 	mkdirSync,
 	readFileSync,
@@ -35,7 +27,6 @@ const {
 } = require("node:fs")
 const { join } = require("node:path")
 const { spawnSync } = require("node:child_process")
-const tar = require("tar")
 
 // Downloads go through the system `curl` (bundled on Windows 10+,
 // macOS and Linux): it honors HTTP_PROXY/HTTPS_PROXY like gh/git do,
@@ -125,37 +116,11 @@ function verifyHash(file, expected) {
 }
 
 /**
- * Extract (tar.gz) into `destDir` via node-tar — no system tar is needed
- * on any platform, so PATH ambiguity (Git for Windows' GNU tar misparses
- * drive-letter paths as remote hosts) cannot bite.
- */
-function runTar(tarball, destDir) {
-	tar.x({ file: tarball, cwd: destDir, sync: true })
-}
-
-/** Extract the platform package (tar.gz) into bin/<platform>-<arch>/. */
-function unpack() {
-	mkdirSync(binDir, { recursive: true })
-	const tarball = join(TMP_DIR, asset.file)
-	try {
-		runTar(tarball, binDir)
-	} catch (err) {
-		// A first failure is often transient when the runner's antivirus or
-		// indexer locks the freshly written binary; clear the partial tree
-		// and retry once before giving up.
-		console.warn(`[ffprobe-bin] unpack failed, retrying once (${err.message})`)
-		rmSync(binDir, { recursive: true, force: true })
-		mkdirSync(binDir, { recursive: true })
-		runTar(tarball, binDir)
-	}
-	if (platform !== "win32") chmodSync(binPath, 0o755)
-}
-
-/**
- * Smoke-run the installed binary and require the expected ffprobe version:
- * a wrong artifact (e.g. a stale/default build) fails here instead of at
- * runtime. `ffprobe -version` prints "ffprobe version <ver>-..." across all
- * the upstream builders (GyanD / evermeet / osxexperts / johnvansickle).
+ * Smoke-run the installed binary and require the expected ffprobe
+ * major.minor version: a wrong artifact (e.g. a stale/default build) fails
+ * here instead of at runtime. `ffprobe -version` prints
+ * "ffprobe version <ver>-..." across all the upstream builders (GyanD /
+ * evermeet / osxexperts / BtbN).
  */
 function smokeTest() {
 	const res = spawnSync(binPath, ["-version"], {
@@ -182,16 +147,19 @@ async function main() {
 	}
 	mkdirSync(TMP_DIR, { recursive: true })
 	try {
-		const tarball = join(TMP_DIR, asset.file)
-		await downloadWithRetry(`${ENV_BASE || RELEASE_BASE}/${asset.file}`, tarball)
-		verifyHash(tarball, asset.sha256)
-		unpack()
+		const tmp = join(TMP_DIR, asset.file)
+		await downloadWithRetry(`${ENV_BASE || RELEASE_BASE}/${asset.file}`, tmp)
+		verifyHash(tmp, asset.sha256)
+		mkdirSync(binDir, { recursive: true })
+		copyFileSync(tmp, binPath)
+		if (platform !== "win32") chmodSync(binPath, 0o755)
 		if (!verifyExisting()) {
-			throw new Error(`${binPath} missing after unpack`)
+			throw new Error(`${binPath} missing after install`)
 		}
 		smokeTest()
 		console.info(`[ffprobe-bin] ${BINARY[platform]} installed at ${binPath}`)
 	} catch (err) {
+		rmSync(binPath, { force: true })
 		fail(`failed to install ffprobe ${manifest?.ffprobe ?? "?"}`, err)
 	} finally {
 		rmSync(TMP_DIR, { recursive: true, force: true })
