@@ -1,6 +1,6 @@
 {
 	"name": "@hoardodile/ffprobe-bin",
-	"version": "0.1.0",
+	"version": "1.0.0",
 	"license": "GPL-3.0",
 	"description": "ffprobe 9.0.1 static binary for the media runtime, downloaded from GitHub Releases at install time (7z-bin / ffprobe-static style).",
 	"type": "commonjs",
